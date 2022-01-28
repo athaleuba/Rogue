@@ -29,7 +29,7 @@ for salle in salles:
         (xp, yp), (dxp, dyp), length = salle['path']
         path = [(xp + k*dxp, yp + k*dyp) for k in range(length)]
         paths += path
-        doors.append(salle['doors'])
+        doors += salle['doors']
 
 empty_cases = coords_vrac + paths
 gold = choice(empty_cases)
@@ -61,3 +61,5 @@ def move_player(player, direction):
         new_player = player
 
     player = new_player
+
+move_player(player, direction)
