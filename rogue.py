@@ -1,7 +1,9 @@
 # Python Standard Library
+import random as rd
 from random import randint
-from random import choice
+from random import choices
 import numpy as np
+import copy as c
 # Third-Party Libraries
 import pygame as pg
 from itertools import product
@@ -23,6 +25,10 @@ PATH = (210,180,140)
 count_gold = 0
 rouge = ( 255, 0,0)
 blue = (0, 0, 128)
+life_point = 50
+weapons_number = 0
+villains = [(25,25),(25,26),(25,27),(26,25),(27,25)]
+villains_killed = []
 
 # Game state
 # ------------------------------------------------------------------------------
@@ -149,9 +155,13 @@ coords_vrac = []
 for room in coord_rooms:
     coords_vrac += room
 
-empty_cases = coords_vrac + PATHS
-gold = choice(empty_cases)
-print(gold)
+empty_cases = c.deepcopy(coords_vrac) 
+nb = randint(1,4)
+weapons = choices(empty_cases, k = nb)
+for weapon in weapons:
+    empty_cases.remove(weapon)
+
+weapons_owned = []
 paywall = 5
 
 def move_player(player, direction):
@@ -180,9 +190,29 @@ def move_player(player, direction):
         return(player)
 
     return(new_player)
-    
+ 
+def find_weapons():
+    if player in weapons:
 
+        weapons_owned.append(player)
+        weapons.remove(player)
 
+def catch_weapon (pos, ls_weapons):
+    return pos in ls_weapons
+
+def damage(pos, ls_vilains):
+    ls_damage = [(elem[0]-1,elem[1]) for elem in ls_vilains]
+    ls_damage += [(elem[0]+1,elem[1]) for elem in ls_vilains]
+    ls_damage += [(elem[0],elem[1]-1) for elem in ls_vilains]
+    ls_damage += [(elem[0],elem[1]+1) for elem in ls_vilains]
+    return pos in ls_damage
+
+def kill_villain():
+    if player in villains:
+        if len(weapons_owned)>0:
+            villains.remove(player)
+            villains_killed.append(player)
+            weapons_owned.pop()
 
 # Game init and main loop
 # ------------------------------------------------------------------------------
@@ -191,17 +221,23 @@ pg.init()
 screen = pg.display.set_mode((X * W, Y * H))
 clock = pg.time.Clock()
 pg.display.set_caption('Show Text')
-font = pg.font.Font('freesansbold.ttf', 24)
-life = font.render('life = ', True, rouge, FLOOR)
-money = font.render('money = ', True, blue, FLOOR)
-lifeRect = life.get_rect()
-lifeRect.center = (2.5*X, 12.2*Y)
-moneyRect = money.get_rect()
-moneyRect.center = (2.5*X, 12.9*Y)
 
+
+font_w = pg.font.Font('freesansbold.ttf', 80)
+winning = font_w.render('Bravo :) ', True, (253,108,158), FLOOR)
+losing = font_w.render('Tu es nul :/ ', True, (253,108,158), FLOOR)
+losingRect = winning.get_rect()
+losingRect.center = (6*X, 7*Y)
+winningRect = winning.get_rect()
+winningRect.center = (7*X, 7*Y)
 pg.display.set_caption('Image')
 image = pg.image.load(r'images/Couronne.png')
-while running:
+
+x_couronne,y_couronne = (26,26)
+win = 0 # vaut 1 si on a gagné
+playing = True
+living = True
+while playing:
     direction = (0,0)
     clock.tick(14)
     for event in pg.event.get():
@@ -225,15 +261,60 @@ while running:
                     running = False
 
     
-    
-    
-    
-    player = move_player(player, direction)
+    Longueur_ini = len(weapons_owned)
+    if player in [(x_couronne,y_couronne),(x_couronne,y_couronne+1),(x_couronne+1,y_couronne),(x_couronne+1,y_couronne+1)]:
+        win = 1
+
     draw_background()
-    screen.blit(image, (380, 380))
+    find_weapons()
+    kill_villain()
+    for villain in villains:
+        draw_tile(villain[0],villain[1],(255,127,0))
+    
+    weapons_number = len(weapons_owned)
+
+    font = pg.font.Font('freesansbold.ttf', 24)
+    '''if catch_weapon(player, weapons):
+        weapons_number += 1'''
+    weapons_str  ='weapons : '
+    weapons_str += str(weapons_number)
+    weapon = font.render(weapons_str, True, blue, FLOOR)
+    weaponRect = weapon.get_rect()
+    weaponRect.center = (3*X, 14*Y)
+
+    if damage(player, villains) and living == True:
+        life_point = life_point - rd.randint(1,5)
+    life_str  ='life : '
+    life_str += str(life_point)
+    life = font.render(life_str, True, rouge, FLOOR)
+    lifeRect = life.get_rect()
+    lifeRect.center = (4*X, 12.2*Y)
+    
     screen.blit(life, lifeRect)
-    screen.blit(money, moneyRect)
+    screen.blit(weapon, weaponRect)
+
+    player = move_player(player, direction)
+    
+    screen.blit(image, (x_couronne*W, y_couronne*H))
+    if win == 1:
+        screen.blit(winning, winningRect)
+    
+    if life_point<=0:
+        living = False
+        life_point = 0
+        if win !=1:
+            screen.blit(losing, winningRect)
+        #playing = False
+
+
     draw_tile(player[0],player[1],(255,0,0))
+    
+    
+    if len(weapons)!=0:
+        for weapon in weapons:
+            draw_tile(weapon[0],weapon[1],(50,50,50))
+
     pg.display.update()
+    
 
 pg.quit()
