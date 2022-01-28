@@ -9,7 +9,7 @@ from itertools import product
 # Constants
 # ------------------------------------------------------------------------------
 
-X,Y = 31, 31 #taille de la fenêtre de jeu
+X,Y = 30, 40 #taille de la fenêtre de jeu
 W,H = 15,15 #taille de nos carrés élémentaires de jeu
 DIRECTIONS = {
     "DOWN": (0, +1),
@@ -21,6 +21,8 @@ FLOOR = (240, 240, 250)
 WALL = (139,69,19)
 PATH = (210,180,140)
 count_gold = 0
+rouge = ( 255, 0,0)
+blue = (0, 0, 128)
 
 # Game state
 # ------------------------------------------------------------------------------
@@ -89,6 +91,7 @@ for salle in salles:
         
     for door in doors:
         DOORS.append(door)
+
             
 
     for (door_1,door_2) in product(DOORS,DOORS):
@@ -126,8 +129,8 @@ def draw_background():
         doors = salle['doors']
         
         for door in doors:
-            
-            draw_tile(door[0],door[1],PATH)
+            if (door[0]>2 and door[0]<28 and door[1]>2 and door[1]<28):
+                draw_tile(door[0],door[1],PATH)
         
 
     for (door_1,door_2) in product(DOORS,DOORS):
@@ -137,9 +140,11 @@ def draw_background():
             
         elif (y1==y2 and abs(x2-x1)==3):
             draw_path(door_1,door_2)
-            
+
+    for i in range(X):
+        draw_tile(i,30,(0,0,0))
         
-coord_rooms = [product([salle['corner'][0] + k for k in range(1, salle['size'][0])], [salle['corner'][1] + l for l in range(1, salle['size'][1])]) for salle in salles]
+coord_rooms = [product([salle['corner'][0] + k for k in range(1, salle['size'][0]-1)], [salle['corner'][1] + l for l in range(1, salle['size'][1]-1)]) for salle in salles]
 coords_vrac = []
 for room in coord_rooms:
     coords_vrac += room
@@ -185,6 +190,17 @@ running = True
 pg.init()
 screen = pg.display.set_mode((X * W, Y * H))
 clock = pg.time.Clock()
+pg.display.set_caption('Show Text')
+font = pg.font.Font('freesansbold.ttf', 24)
+life = font.render('life = ', True, rouge, FLOOR)
+money = font.render('money = ', True, blue, FLOOR)
+lifeRect = life.get_rect()
+lifeRect.center = (2.5*X, 12.2*Y)
+moneyRect = money.get_rect()
+moneyRect.center = (2.5*X, 12.9*Y)
+
+pg.display.set_caption('Image')
+image = pg.image.load(r'images/Couronne.png')
 while running:
     direction = (0,0)
     clock.tick(14)
@@ -209,8 +225,14 @@ while running:
                     running = False
 
     
+    
+    
+    
     player = move_player(player, direction)
     draw_background()
+    screen.blit(image, (380, 380))
+    screen.blit(life, lifeRect)
+    screen.blit(money, moneyRect)
     draw_tile(player[0],player[1],(255,0,0))
     pg.display.update()
 
